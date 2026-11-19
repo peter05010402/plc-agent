@@ -1,0 +1,72 @@
+FUNCTION_BLOCK "MotorPumpCtrl"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT
+      StartBtn : Bool;          // 启动按钮（常开，点动）
+      StopBtn : Bool;           // 停止按钮（常开）
+      EStop : Bool;             // 急停回路（常闭，TRUE = 安全回路正常）
+      Overload : Bool;          // 电机过载（常开，TRUE = 过载）
+      AutoMode : Bool;          // 自动模式选择
+      LevelLow : Bool;          // 液位低，允许启动
+   END_VAR
+   VAR_OUTPUT
+      MotorRun : Bool;          // 电机运行输出（接触器 KM1）
+      RunLamp : Bool;           // 运行指示灯
+      FaultLamp : Bool;         // 故障指示灯
+      FaultCode : Int;          // 故障代码
+   END_VAR
+   VAR
+      statRun : Bool;           // 运行状态（自保持）
+      statFault : Bool;         // 故障锁存
+      statBlink : Bool;         // 故障灯闪烁位
+      tonBlink : TON;           // 闪烁定时器
+   END_VAR
+   VAR_TEMP
+      tmpSafetyOk : Bool;       // 安全条件汇总
+   END_VAR
+
+BEGIN
+    // ---- 1) 安全条件汇总：急停常闭（1=正常）且未过载 ----
+    #tmpSafetyOk := #EStop AND NOT #Overload;
+
+    // ---- 2) 故障锁存：安全条件丢失即锁存，需人工复位 ----
+    IF NOT #tmpSafetyOk THEN
+        #statFault := TRUE;
+        IF NOT #EStop THEN
+            #FaultCode := 16#0001;      // 急停触发
+        ELSE
+            #FaultCode := 16#0002;      // 电机过载
+        END_IF;
+    END_IF;
+
+    // ---- 3) 复位：停止按钮 + 安全条件已恢复 ----
+    IF #StopBtn AND #tmpSafetyOk THEN
+        #statFault := FALSE;
+        #FaultCode := 0;
+    END_IF;
+
+    // ---- 4) 启停逻辑（带自保持，故障时强制停机）----
+    IF #tmpSafetyOk AND NOT #statFault THEN
+        IF #StopBtn THEN
+            #statRun := FALSE;
+        END_IF;
+        IF #StartBtn AND (#LevelLow OR #AutoMode) THEN
+            #statRun := TRUE;
+        END_IF;
+    ELSE
+        #statRun := FALSE;
+    END_IF;
+
+    // ---- 5) 输出映射（停机时输出全部回到安全态）----
+    #MotorRun := #statRun;
+    #RunLamp := #statRun;
+
+    // ---- 6) 故障灯 1 Hz 闪烁：TON 自复位振荡（IN 必须带 NOT Q）----
+    #tonBlink(IN := #statFault AND NOT #tonBlink.Q, PT := T#500ms);
+    IF #tonBlink.Q THEN
+        #statBlink := NOT #statBlink;
+    END_IF;
+
+    // ---- 7) 故障灯最终映射：无故障时常灭 ----
+    #FaultLamp := #statFault AND #statBlink;
+END_FUNCTION_BLOCK

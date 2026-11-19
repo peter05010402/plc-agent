@@ -1,0 +1,6 @@
+# 运行时依赖（离线 mock 模式也需要 langgraph 才能走原生引擎）
+langgraph>=0.2.0
+httpx>=0.24.0
+
+# 开发/测试
+pytest>=7.4.0

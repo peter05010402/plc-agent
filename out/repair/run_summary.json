@@ -1,0 +1,25 @@
+{
+  "block": "MotorPumpCtrl",
+  "station": "泵站离心泵启停控制（S7-1500 / SCL）",
+  "backend": "mock",
+  "model": "mock",
+  "passed": true,
+  "errors": 0,
+  "warnings": 0,
+  "repairs": 1,
+  "files": {
+    "scl": "out/repair/MotorPumpCtrl.scl",
+    "io_table": "out/repair/io_table.csv",
+    "report": "out/repair/validation_report.md",
+    "test_plan": "out/repair/test_plan.md"
+  },
+  "trace": [
+    "需求解析完成：泵站离心泵启停控制（S7-1500 / SCL）（IO 10 点，安全项 5 条）",
+    "检索规范库：命中 3 篇（IO 地址、命名规范与工程交付, 安全联锁与急停处理（失效安全原则）, 状态机、定时器与扫描周期）",
+    "生成 SCL 草稿：71 行（块名 MotorPumpCtrl）",
+    "评审意见：通过",
+    "静态校验：2 error / 1 warning → 需修复",
+    "第 1 轮修复：71 行 → 72 行",
+    "静态校验：0 error / 0 warning → 通过"
+  ]
+}
